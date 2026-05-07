@@ -1,0 +1,63 @@
+name: Archive Bot 签到
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  archive-bot-checkin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Create config
+        run: |
+          cat > src/archive_bot/config.yaml << 'EOF'
+          archive_bot:
+            - bot_type: "${{ secrets.ARCHIVE_BOT_TYPE }}"
+              api_address: "${{ secrets.ARCHIVE_BOT_API_ADDRESS }}"
+              api_key: "${{ secrets.ARCHIVE_BOT_API_KEY }}"
+            - bot_type: "${{ secrets.ARCHIVE_BOT_TYPE_1 }}"
+              api_address: "${{ secrets.ARCHIVE_BOT_API_ADDRESS_1 }}"
+              api_key: "${{ secrets.ARCHIVE_BOT_API_KEY_1 }}"
+            - bot_type: "${{ secrets.ARCHIVE_BOT_TYPE_2 }}"
+              api_address: "${{ secrets.ARCHIVE_BOT_API_ADDRESS_2 }}"
+              api_key: "${{ secrets.ARCHIVE_BOT_API_KEY_2 }}"
+            - bot_type: "${{ secrets.ARCHIVE_BOT_TYPE_3 }}"
+              api_address: "${{ secrets.ARCHIVE_BOT_API_ADDRESS_3 }}"
+              api_key: "${{ secrets.ARCHIVE_BOT_API_KEY_3 }}"
+            - bot_type: "${{ secrets.ARCHIVE_BOT_TYPE_4 }}"
+              api_address: "${{ secrets.ARCHIVE_BOT_API_ADDRESS_4 }}"
+              api_key: "${{ secrets.ARCHIVE_BOT_API_KEY_4 }}"
+            - bot_type: "${{ secrets.ARCHIVE_BOT_TYPE_5 }}"
+              api_address: "${{ secrets.ARCHIVE_BOT_API_ADDRESS_5 }}"
+              api_key: "${{ secrets.ARCHIVE_BOT_API_KEY_5 }}"
+          EOF
+
+      - name: Filter empty accounts
+        run: |
+          python3 -c "
+          import yaml
+          with open('src/archive_bot/config.yaml', 'r') as f:
+              config = yaml.safe_load(f)
+          accounts = config.get('archive_bot', [])
+          filtered = [a for a in accounts if a.get('api_key')]
+          config['archive_bot'] = filtered
+          with open('src/archive_bot/config.yaml', 'w') as f:
+              yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+          print(f'Filtered {len(accounts)} accounts -> {len(filtered)} valid accounts')
+          "
+
+      - name: Run Archive Bot checkin
+        run: python src/archive_bot/archive_bot_checkin.py
