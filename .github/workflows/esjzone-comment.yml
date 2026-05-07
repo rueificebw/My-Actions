@@ -1,0 +1,22 @@
+name: ESJ Zone 每日评论
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 22 * * *'
+
+jobs:
+  checkin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+      - name: 执行评论
+        env:
+          ESJ_USERNAME: ${{ secrets.ESJ_USERNAME }}
+          ESJ_PASSWORD: ${{ secrets.ESJ_PASSWORD }}
+        run: python src/esjzone/esjzone_comment.py

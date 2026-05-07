@@ -1,0 +1,46 @@
+name: Falemon 订阅采集
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 21 */2 * *'
+
+jobs:
+  capture:
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: 下载 Falemon 安装包
+      shell: pwsh
+      run: |
+        $url = "https://github.com/Faalemon/website/releases/download/v1.11.0219/FalemonSetup-1.11.1063.exe"
+        $out = "$env:TEMP\FalemonSetup.exe"
+        Invoke-WebRequest -Uri $url -OutFile $out
+        Write-Output "Downloaded: $((Get-Item $out).Length) bytes"
+
+    - name: 静默安装 Falemon
+      shell: pwsh
+      run: |
+        Start-Process -FilePath "$env:TEMP\FalemonSetup.exe" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/DIR="C:\Falemon"','/NORESTART' -Wait -NoNewWindow
+        Write-Output "Installed to C:\Falemon"
+
+    - name: 运行采集脚本
+      shell: pwsh
+      run: |
+        $env:PYTHONIOENCODING = 'utf-8'
+        python $env:GITHUB_WORKSPACE/src/Falemon/Falemon-capture.py
+
+    - name: 上传结果
+      uses: actions/upload-artifact@v4
+      with:
+        name: falemon-sub-${{ github.run_id }}
+        path: C:\captured\
+        retention-days: 7
