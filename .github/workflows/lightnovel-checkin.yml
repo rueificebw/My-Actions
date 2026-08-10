@@ -1,0 +1,27 @@
+name: 轻书架签到
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  lightnovel-checkin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm i --no-save @microsoft/signalr @microsoft/signalr-protocol-msgpack
+
+      - name: Run lightnovel checkin
+        run: node src/lightnovel/daily-signin.mjs
+        env:
+          LNS_EMAIL: ${{ secrets.LNS_EMAIL }}
+          LNS_PASSWORD: ${{ secrets.LNS_PASSWORD }}

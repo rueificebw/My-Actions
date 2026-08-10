@@ -1,6 +1,6 @@
 # 自动签到工具
 
-支持轻之国度、GLaDOS、Archive Bot、ESJ Zone、WorkBuddy、中国移动云盘 每日自动签到。
+支持轻之国度、轻书架、GLaDOS、Archive Bot、ESJ Zone、WorkBuddy、中国移动云盘 每日自动签到。
 
 
 ## 使用方法
@@ -19,6 +19,13 @@
 |-------------|------|
 | `LK_USERNAME` | LK 用户名/邮箱 |
 | `LK_PASSWORD` | LK 密码 |
+
+#### 轻书架签到配置
+
+| Secret 名称 | 说明 |
+|-------------|------|
+| `LNS_EMAIL` | 轻书架登录邮箱 |
+| `LNS_PASSWORD` | 轻书架登录密码 |
 
 #### GLaDOS 签到配置
 
