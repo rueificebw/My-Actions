@@ -33,4 +33,23 @@ if (!Success) {
   throw new Error(`signin: ${Msg ?? Status}`);
 }
 const data = Response instanceof Uint8Array ? JSON.parse(gunzipSync(Buffer.from(Response)).toString()) : Response;
-console.log(JSON.stringify(data));
+
+// 与轻书架 Web 端字段口径一致：
+// Reward=本次经验 CoinReward=本次金币 Streak=连签天数 Exp=累计经验 Coin=金币余额 Level=当前等级
+const { Reward = 0, CoinReward = 0, Streak = 0, Exp = 0, Coin = 0, Level = 0 } = data ?? {};
+const dateStr = new Date().toLocaleString('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+console.log(`轻书架签到成功（${dateStr} 北京时间）`);
+console.log(`- 连续签到：${Streak} 天`);
+console.log(`- 本次奖励：经验 +${Reward}，金币 +${CoinReward}`);
+console.log(`- 当前等级：Lv.${Level}（累计经验 ${Exp}）`);
+console.log(`- 金币余额：${Coin}`);
+console.log(`原始数据：${JSON.stringify(data)}`);
