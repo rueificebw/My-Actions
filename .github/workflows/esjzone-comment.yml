@@ -3,7 +3,7 @@ name: ESJ Zone 每日评论
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 22 * * *'
+    - cron: '30 21 * * *'
 
 jobs:
   checkin:
