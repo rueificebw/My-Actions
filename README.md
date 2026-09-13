@@ -1,6 +1,6 @@
 # 自动签到工具
 
-支持轻之国度、轻书架、GLaDOS、Archive Bot、ESJ Zone、WorkBuddy、中国移动云盘 每日自动签到。
+支持轻书架、GLaDOS、Archive Bot、ESJ Zone、WorkBuddy、中国移动云盘 每日自动签到。
 
 
 ## 使用方法
@@ -12,13 +12,6 @@
 ### 2. 配置 Secrets
 
 进入你 Fork 的仓库，点击 **Settings → Secrets and variables → Actions → New repository secret**，添加以下 Secrets：
-
-#### LK 签到配置
-
-| Secret 名称 | 说明 |
-|-------------|------|
-| `LK_USERNAME` | LK 用户名/邮箱 |
-| `LK_PASSWORD` | LK 密码 |
 
 #### 轻书架签到配置
 
