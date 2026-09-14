@@ -611,7 +611,7 @@ def run_with_auth(auth_path: str):
 
     if not auth_token:
         log_error("auth 为空，抓包可能未成功")
-        return
+        sys.exit(1)
 
     if not phone or phone == "13800138000":
         log_warn("phone 为空或默认值")
@@ -623,7 +623,7 @@ def run_with_auth(auth_path: str):
     auth = CaiYunAuth(phone, auth_token)
     if not auth.authenticate():
         log_error("认证失败，请重新获取最新 Authorization")
-        return
+        sys.exit(1)
 
     fingerprint = {
         "device_id": config.get("device_id", "").strip(),
