@@ -26,10 +26,6 @@ DEFAULT_BASE_URL = "https://glados.one"
 DEFAULT_HEADERS = {
     "accept": "application/json, text/plain, */*",
     "content-type": "application/json;charset=UTF-8",
-    "user-agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-    ),
 }
 
 
@@ -97,12 +93,17 @@ class GladosClient:
         cookie: str,
         *,
         base_url: str = DEFAULT_BASE_URL,
+        user_agent: str = "",
         checkin_token: Optional[str] = None,
         timeout: int = 30,
     ):
         self.session = requests.Session()
         self.session.headers.update(DEFAULT_HEADERS)
         self.base_url = (base_url or "").strip().rstrip("/")
+        user_agent = (user_agent or "").strip()
+        if not user_agent:
+            raise ValueError("User-Agent 为空")
+        self.session.headers["user-agent"] = user_agent
         self.checkin_token = (checkin_token or "").strip()
         self.timeout = timeout
 
@@ -185,13 +186,23 @@ def run_checkin(config: dict) -> tuple[bool, str]:
     glados_config = config.get("glados", {}) or {}
     cookie = glados_config.get("cookie", "") or ""
     base_url = (glados_config.get("base_url", DEFAULT_BASE_URL) or DEFAULT_BASE_URL).strip()
+    user_agent = (glados_config.get("user_agent", "") or "").strip()
     checkin_token = glados_config.get("checkin_token")
     timeout = int(glados_config.get("timeout", 30) or 30)
 
     if not cookie.strip():
         return False, build_failure_message(None, "未配置 glados.cookie")
 
-    client = GladosClient(cookie=cookie, base_url=base_url, checkin_token=checkin_token, timeout=timeout)
+    if not user_agent:
+        return False, build_failure_message(None, "未配置 glados.user_agent")
+
+    client = GladosClient(
+        cookie=cookie,
+        base_url=base_url,
+        user_agent=user_agent,
+        checkin_token=checkin_token,
+        timeout=timeout,
+    )
 
     status = client.get_status()
     if status.get("code") != 0:

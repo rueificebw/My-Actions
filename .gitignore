@@ -3,3 +3,4 @@ __pycache__
 *.har
 logs
 index.zh-hans.md
+.env

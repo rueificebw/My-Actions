@@ -25,6 +25,7 @@
 | Secret 名称 | 说明 |
 |-------------|------|
 | `GLADOS_COOKIE` | GLaDOS 的 Cookie |
+| `GLADOS_USER_AGENT` | 浏览器 User-Agent |
 | `GLADOS_BASE_URL` | 默认为 `https://glados.one` |
 
 #### Archive Bot 签到配置

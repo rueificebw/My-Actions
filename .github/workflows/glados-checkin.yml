@@ -27,6 +27,7 @@ jobs:
           glados:
             base_url: "${{ secrets.GLADOS_BASE_URL }}"
             cookie: "${{ secrets.GLADOS_COOKIE }}"
+            user_agent: "${{ secrets.GLADOS_USER_AGENT }}"
             timeout: 30
           EOF
 
