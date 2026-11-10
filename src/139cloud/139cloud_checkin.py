@@ -3,8 +3,10 @@ import time
 import os
 import sys
 import random
+import socket
 import uuid
 import hashlib
+import threading
 from typing import Optional, Dict, Tuple
 
 import requests
@@ -22,6 +24,96 @@ UA = (
 MIN_SLEEP = 1
 MAX_SLEEP = 2
 REQ_TIMEOUT = 15
+
+DOH_SERVERS = (
+    "https://doh.pub/dns-query",
+    "https://dns.alidns.com/resolve",
+)
+DOH_HOSTS = frozenset({
+    "m.mcloud.139.com",
+    "user-njs.yun.139.com",
+    "orches.yun.139.com",
+})
+DOH_CACHE_TTL = 60
+
+_DOH_CACHE: Dict[str, Tuple[float, list]] = {}
+_DOH_LOCK = threading.Lock()
+_ORIG_GETADDRINFO = None
+
+
+def _doh_resolve(host: str) -> list:
+    pending = [host]
+    ips = []
+    for _ in range(4):
+        if not pending:
+            break
+        name = pending.pop(0)
+        for server in DOH_SERVERS:
+            try:
+                resp = requests.get(
+                    server,
+                    params={"name": name, "type": "A"},
+                    headers={"accept": "application/dns-json"},
+                    timeout=5,
+                )
+                answers = resp.json().get("Answer") or []
+            except Exception:
+                continue
+            found = [a["data"] for a in answers if a.get("type") == 1]
+            cnames = [str(a["data"]).rstrip(".") for a in answers if a.get("type") == 5]
+            for cname in cnames:
+                if cname != name and cname not in pending:
+                    pending.append(cname)
+            ips.extend(found)
+            if found:
+                break
+    unique = []
+    for ip in ips:
+        if ip not in unique:
+            unique.append(ip)
+    return unique
+
+
+def _doh_addresses(host: str) -> list:
+    with _DOH_LOCK:
+        cached = _DOH_CACHE.get(host)
+    if cached and time.time() - cached[0] < DOH_CACHE_TTL:
+        return cached[1]
+    ips = _doh_resolve(host)
+    if ips:
+        with _DOH_LOCK:
+            _DOH_CACHE[host] = (time.time(), ips)
+    return ips
+
+
+def install_doh_resolver():
+    global _ORIG_GETADDRINFO
+    with _DOH_LOCK:
+        if _ORIG_GETADDRINFO is not None:
+            return
+        _ORIG_GETADDRINFO = socket.getaddrinfo
+    original = _ORIG_GETADDRINFO
+
+    def resolver(host, port, family=0, socktype=0, proto=0, flags=0):
+        name = host.decode("idna") if isinstance(host, bytes) else host
+        if isinstance(name, str) and name in DOH_HOSTS:
+            ips = _doh_addresses(name)
+            if ips:
+                stype = socktype or socket.SOCK_STREAM
+                try:
+                    num_port = int(port)
+                except (TypeError, ValueError):
+                    num_port = 443
+                return [
+                    (socket.AF_INET, stype, 0, "", (ip, num_port))
+                    for ip in ips
+                ]
+        return original(host, port, family, socktype, proto, flags)
+
+    socket.getaddrinfo = resolver
+
+
+install_doh_resolver()
 
 
 def load_captured_auth(path: str = CAPTURED_AUTH_PATH) -> Dict[str, str]:
@@ -89,7 +181,7 @@ def log_title(msg: str):
 
 class CaiYunAuth:
     SSO_TOKEN_URL = "https://orches.yun.139.com/orchestration/auth-rebuild/token/v1.0/querySpecToken"
-    SSO_TOKEN_URL_V2 = "https://user-njs.yun.139.com/user/querySpecToken"
+    SSO_TOKEN_URL_V2 = "https://user-njs.yun.139.com/user/querySpecTokenV2"
 
                                                                         
                                                                       
@@ -136,9 +228,14 @@ class CaiYunAuth:
             "Content-Type": "application/json",
             "Accept": "*/*",
             "Host": "user-njs.yun.139.com",
+            "Origin": "https://frontend.mcloud.139.com",
+            "Referer": "https://frontend.mcloud.139.com/",
+            "x-requested-with": "com.chinamobile.mcloud",
+            "x-mm-source": "001",
+            "x-yun-tid": str(uuid.uuid4()),
             "User-Agent": UA,
         }
-        data = {"phoneNumber": self.phone, "toSourceId": "001003"}
+        data = {"toSourceId": "001005"}
         try:
             resp = self.session.post(
                 self.SSO_TOKEN_URL_V2, headers=headers, json=data, timeout=REQ_TIMEOUT
